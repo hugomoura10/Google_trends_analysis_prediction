@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from neuralprophet import NeuralProphet
+import yfinance as yf
 from sklearn.metrics import mean_absolute_error
 
 # Load Google Trends data for the selected cryptocurrency token
