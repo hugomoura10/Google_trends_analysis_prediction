@@ -32,8 +32,8 @@ def calculate_correlation(price_csv_path, trend_csv_path, trend_column_name):
     return correlation
 
 # Example usage
-price_csv_path = 'Google Trends Data Challenge Datasets/prices/ETH-USD.csv'
-trend_csv_path = 'Google Trends Data Challenge Datasets/trends/ethereum.csv'
-trend_column_name = 'ethereum: (Worldwide)' 
+price_csv_path = 'Google Trends Data Challenge Datasets/prices/OCEAN-USD.csv'
+trend_csv_path = 'Google Trends Data Challenge Datasets/trends/ocean protocol.csv'
+trend_column_name = 'ocean protocol: (Worldwide)' 
 correlation = calculate_correlation(price_csv_path, trend_csv_path, trend_column_name)
 print(f"Correlation between '{trend_column_name}' trend and price: {correlation}")

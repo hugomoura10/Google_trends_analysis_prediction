@@ -1,25 +1,43 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
+from scipy.signal import wiener
 
-# Load merged dataset with both search trend and price data
-df = pd.read_csv('bitcoin_merged_data.csv')
+# Load data
+df = pd.read_csv('Google Trends Data Challenge Datasets/trends/bitcoin.csv', skiprows=1)
 df = df.dropna()
+
+# Convert 'Week' column to datetime
 df['Week'] = pd.to_datetime(df['Week'])
 
+# Plot original data
 df.plot(x="Week", y="bitcoin: (Worldwide)")
 plt.xticks(rotation=45)
+plt.title('Original bitcoin Searches')
 plt.show()
 
-# Features and target variable
-X = df[['bitcoin: (Worldwide)', 'Close']][:-3]  # Features (excluding the last three rows)
-y = df['bitcoin: (Worldwide)'][3:]    # Target (excluding the first three rows)
+# Apply Wiener smoothing to the data
+smoothed_data = wiener(df['bitcoin: (Worldwide)'])
 
-# Splitting the data
+# Update DataFrame with smoothed data
+df['bitcoin_smoothed'] = smoothed_data
+
+# Plot smoothed data
+df.plot(x="Week", y="bitcoin_smoothed")
+plt.xticks(rotation=45)
+plt.title('Smoothed bitcoin Searches')
+plt.show()
+
+# Prepare data for modeling
+X = df[['bitcoin_smoothed']][:-3]  # Features (excluding the last 3 rows)
+y = df['bitcoin_smoothed'][3:]     # Target (excluding the first 3 rows)
+
+# Split data into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Initialize and train the model
+# Train RandomForestRegressor model
 model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
 model.fit(X_train, y_train)
 
@@ -34,19 +52,20 @@ test_score = model.score(X_test, y_test)
 print('Train Score:', train_score)
 print('Test Score:', test_score)
 
-# Prediction for the last three rows
-new_data = df[['bitcoin: (Worldwide)', 'Close']].tail(3)
+# Prediction for the last 3 rows
+new_data = df[['bitcoin_smoothed']].tail(3)
 predictions = model.predict(new_data)
-print('The model predicts the last three rows:', predictions)
-print('Actual values:', df['bitcoin: (Worldwide)'].iloc[-3:])
+print('The model predicts the last 3 rows:', predictions)
+print('Actual values for the last 3 rows:')
+print(df['bitcoin_smoothed'].tail(3))
 
-# Plotting
+# Plot results
 plt.figure(figsize=(10, 6))
-plt.plot(df.index[3:], y, label='Actual Bitcoin Searches')
+plt.plot(df.index[3:], y, label='Actual bitcoin Searches (Smoothed)')
 plt.plot(df.index[3:len(train_pred) + 3], train_pred, label='Train Predictions')
 plt.plot(df.index[-len(test_pred):], test_pred, label='Test Predictions')
-plt.title('Bitcoin Searches Forecast')
+plt.title('bitcoin Searches Forecast (Smoothed)')
 plt.xlabel('Week')
-plt.ylabel('Bitcoin Searches')
+plt.ylabel('bitcoin Searches (Smoothed)')
 plt.legend()
 plt.show()
