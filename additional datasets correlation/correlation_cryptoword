@@ -1,0 +1,31 @@
+import pandas as pd
+
+# Define preprocessing function
+def preprocess_trend_data(trend_series):
+    # Replace '<1' with 0
+    trend_series_numeric = trend_series.replace('<1', 0)
+    # Convert to numeric values
+    trend_series_numeric = pd.to_numeric(trend_series_numeric, errors='coerce').fillna(0)
+    return trend_series_numeric
+
+# Load the datasets
+monthly_data = pd.read_csv('Google Trends Data Challenge Datasets/additional_datasets/crypto_searches.csv', skiprows=1)
+weekly_data = pd.read_csv('Google Trends Data Challenge Datasets/trends/dogecoin.csv', skiprows=1)
+
+# Convert 'Month' and 'Week' columns to datetime format
+monthly_data['Month'] = pd.to_datetime(monthly_data['Month'], format='%Y-%m')
+weekly_data['Week'] = pd.to_datetime(weekly_data['Week'])
+
+# Preprocess weekly data
+weekly_data['dogecoin: (Worldwide)'] = preprocess_trend_data(weekly_data['dogecoin: (Worldwide)'])
+
+# Interpolate monthly data to weekly
+monthly_data_interpolated = monthly_data.set_index('Month').resample('W').ffill()
+
+# Merge datasets based on the 'Week' column
+merged_data = pd.merge(monthly_data_interpolated, weekly_data, left_index=True, right_on='Week')
+
+# Calculate correlation between 'crypto: (Worldwide)' and /dogecoin: (Worldwide)' columns
+correlation = merged_data['crypto: (Worlwide)'].corr(merged_data['dogecoin: (Worldwide)'])
+
+print(f"Correlation between Monthly Crypto and Weekly dogecoin Trends: {correlation}")
