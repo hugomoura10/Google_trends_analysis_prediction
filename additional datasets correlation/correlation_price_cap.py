@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 
 price_data = pd.read_csv('Google Trends Data Challenge Datasets/prices/BTC-USD.csv')
 market_cap_data = pd.read_csv('Google Trends Data Challenge Datasets/additional_datasets/archive-6/bitcoin.csv')
