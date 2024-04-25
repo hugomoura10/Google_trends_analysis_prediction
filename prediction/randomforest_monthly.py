@@ -24,19 +24,23 @@ if apply_smoothing_flag:
 else:
     df['bitcoin_smoothed'] = df['bitcoin: (Worldwide)']
 
+# Resample data to monthly frequency
+df.set_index('Week', inplace=True)
+df_monthly = df.resample('M').mean()
+
 # Prepare data for modeling
-X = df[['bitcoin_smoothed']][:-3]  # Features (excluding the last 3 rows)
-y = df['bitcoin_smoothed'][3:]     # Target (excluding the first 3 rows)
+X = df_monthly[['bitcoin_smoothed']][:-3]  # Features (excluding the last 3 rows)
+y = df_monthly['bitcoin_smoothed'][3:]     # Target (excluding the first 3 rows)
 
 # Split data into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Define the parameter grid for Grid Search
 param_grid = {
-    'n_estimators': [325, 350, 375],
+    'n_estimators': [400, 500, 600],
     'max_depth': [2, 3, 4],
-    'min_samples_split': [3, 4, 5],
-    'min_samples_leaf': [8, 9, 10],
+    'min_samples_split': [4, 5, 6],
+    'min_samples_leaf': [9, 10, 11],
     'max_features': [1, 2, 3]
 }
 
@@ -68,19 +72,19 @@ print('Train Score:', train_score)
 print('Test Score:', test_score)
 
 # Prediction for the last 3 rows
-new_data = df[['bitcoin_smoothed']].tail(3)
+new_data = df_monthly[['bitcoin_smoothed']].tail(3)
 predictions = best_model.predict(new_data)
 print('The model predicts the last 3 rows:', predictions)
 print('Actual values for the last 3 rows:')
-print(df['bitcoin_smoothed'].tail(3))
+print(df_monthly['bitcoin_smoothed'].tail(3))
 
 # Plot results
 plt.figure(figsize=(10, 6))
-plt.plot(df.index[3:], y, label='Actual bitcoin Searches (Smoothed)')
-plt.plot(df.index[3:len(train_pred) + 3], train_pred, label='Train Predictions')
-plt.plot(df.index[-len(test_pred):], test_pred, label='Test Predictions')
+plt.plot(df_monthly.index[3:], y, label='Actual bitcoin Searches (Smoothed)')
+plt.plot(df_monthly.index[3:len(train_pred) + 3], train_pred, label='Train Predictions')
+plt.plot(df_monthly.index[-len(test_pred):], test_pred, label='Test Predictions')
 plt.title('bitcoin Searches Forecast (Smoothed)' if apply_smoothing_flag else 'bitcoin Searches Forecast (Original)')
-plt.xlabel('Week')
+plt.xlabel('Month')
 plt.ylabel('bitcoin Searches (Smoothed)' if apply_smoothing_flag else 'bitcoin Searches (Original)')
 plt.legend()
 plt.show()
