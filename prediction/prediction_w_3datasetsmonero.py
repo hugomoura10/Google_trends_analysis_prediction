@@ -50,6 +50,7 @@ param_grid = {
     'max_depth': [3, 4, 5],
     'min_samples_split': [1, 2, 3],
     'min_samples_leaf': [10, 11, 12],
+    'bootstrap': [True, False],
     'max_features': [2, 3, 4]
 }
 
