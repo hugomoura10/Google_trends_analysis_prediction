@@ -17,45 +17,39 @@ df = df.dropna()
 df['Week'] = pd.to_datetime(df['Week'])
 
 # Choose whether to apply smoothing or not
-apply_smoothing_flag = True  # Set this to False if you don't want to apply smoothing
+apply_smoothing_flag = False  # Set this to False if you don't want to apply smoothing
 if apply_smoothing_flag:
     # Apply Wiener smoothing to the data
     df['bitcoin_smoothed'] = apply_smoothing(df['bitcoin: (Worldwide)'])
 else:
     df['bitcoin_smoothed'] = df['bitcoin: (Worldwide)']
 
-# Resample data to monthly frequency
-df.set_index('Week', inplace=True)
-df_monthly = df.resample('3W').mean()
-
 # Prepare data for modeling
-X = df_monthly[['bitcoin_smoothed']][:-3]  # Features (excluding the last 3 rows)
-y = df_monthly['bitcoin_smoothed'][3:]     # Target (excluding the first 3 rows)
+X = df[['bitcoin_smoothed']][:-3]  # Features (excluding the last 3 rows)
+y = df['bitcoin_smoothed'][3:]     # Target (excluding the first 3 rows)
 
 # Split data into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-#0Define the parameter grid for Grid Search
-param_grid = {
-    'n_estimators': [75, 100, 150],
-    'max_depth': [1, 2, 3],
-    'min_samples_split': [3, 4, 5],
-    'min_samples_leaf': [9, 10],
-    'max_features': [1, 2]
-}
-
+# Define the parameter grid for Grid Search
 # param_grid = {
-#     'n_estimators': [100],
-#     'max_depth': [None],
-#     'min_samples_split': [2],
-#     'min_samples_leaf': [1],
-#     'max_features': ['sqrt']
+#     'n_estimators': [325, 350, 375],
+#     'max_depth': [2, 3, 4],
+#     'min_samples_split': [3, 4, 5],
+#     'min_samples_leaf': [8, 9, 10],
+#     'max_features': [1, 2, 3]
 # }
 
-
+param_grid = {
+    'n_estimators': [100],
+    'max_depth': [None],
+    'min_samples_split': [2, 3, 4],
+    'min_samples_leaf': [1, 2, 3],
+    'max_features': ['sqrt']
+}
 
 # Instantiate the model
-model = RandomForestRegressor(random_state=42)
+model = RandomForestRegressor(random_state=0)
 
 # Instantiate Grid Search
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=3, n_jobs=-1, verbose=2)
@@ -82,19 +76,19 @@ print('Train Score:', train_score)
 print('Test Score:', test_score)
 
 # Prediction for the last 3 rows
-new_data = df_monthly[['bitcoin_smoothed']].tail(3)
+new_data = df[['bitcoin_smoothed']].tail(3)
 predictions = best_model.predict(new_data)
 print('The model predicts the last 3 rows:', predictions)
 print('Actual values for the last 3 rows:')
-print(df_monthly['bitcoin_smoothed'].tail(3))
+print(df['bitcoin_smoothed'].tail(3))
 
 # Plot results
 plt.figure(figsize=(10, 6))
-plt.plot(df_monthly.index[3:], y, label='Actual bitcoin Searches (Smoothed)')
-plt.plot(df_monthly.index[3:len(train_pred) + 3], train_pred, label='Train Predictions')
-plt.plot(df_monthly.index[-len(test_pred):], test_pred, label='Test Predictions')
+plt.plot(df.index[3:], y, label='Actual bitcoin Searches (Smoothed)')
+plt.plot(df.index[3:len(train_pred) + 3], train_pred, label='Train Predictions')
+plt.plot(df.index[-len(test_pred):], test_pred, label='Test Predictions')
 plt.title('bitcoin Searches Forecast (Smoothed)' if apply_smoothing_flag else 'bitcoin Searches Forecast (Original)')
-plt.xlabel('Month')
+plt.xlabel('Week')
 plt.ylabel('bitcoin Searches (Smoothed)' if apply_smoothing_flag else 'bitcoin Searches (Original)')
 plt.legend()
 plt.show()

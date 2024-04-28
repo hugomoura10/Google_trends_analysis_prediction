@@ -1,76 +1,99 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.signal import wiener
+import torch
+import torch.nn as nn
 from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential
-from keras.layers import LSTM, Dense
-from sklearn.metrics import mean_absolute_error
+import matplotlib.pyplot as plt
 
-# Load Google Trends data for the selected cryptocurrency token
-data = pd.read_csv('Google Trends Data Challenge Datasets/trends/bitcoin.csv', skiprows=1)  
-data.columns = ['ds', 'y']  
-data['ds'] = pd.to_datetime(data['ds'])  
+# Load the dataset
+data = pd.read_csv("Google Trends Data Challenge Datasets/trends/bitcoin.csv", skiprows=1)
 
-# Apply the Wiener filter to smooth the time series
-smoothed_data = wiener(data['y'])
+# Preprocess the data
+data['Week'] = pd.to_datetime(data['Week'])
+data.set_index('Week', inplace=True)
+data.sort_index(inplace=True)
 
-# Plot the original and smoothed time series
-plt.plot(data['ds'], data['y'], label='Original', color='blue')
-plt.plot(data['ds'], smoothed_data, label='Smoothed', color='red')
-plt.xlabel('Date')
-plt.ylabel('Search Interest')
-plt.title('Original and Smoothed Time Series')
-plt.legend()
-plt.show()
-
-# Prepare the data for LSTM
+# Scale the data
 scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(smoothed_data.reshape(-1, 1))
+scaled_data = scaler.fit_transform(data)
 
-# Define function to create dataset with lookback
-def create_dataset(dataset, look_back=1):
-    X, Y = [], []
-    for i in range(len(dataset)-look_back):
-        X.append(dataset[i:(i+look_back), 0])
-        Y.append(dataset[i + look_back, 0])
-    return np.array(X), np.array(Y)
+# Convert data to PyTorch tensors
+data_tensor = torch.tensor(scaled_data, dtype=torch.float32)
 
-# Split data into training and test sets
-train_size = int(len(scaled_data) * 0.7)
-test_size = len(scaled_data) - train_size
-train, test = scaled_data[0:train_size,:], scaled_data[train_size:len(scaled_data),:]
+# Define function to create sequences
+def create_sequences(data, seq_length):
+    sequences = []
+    for i in range(len(data) - seq_length):
+        seq = data[i:i+seq_length]
+        sequences.append(seq)
+    return torch.stack(sequences)
 
-look_back = 12  # Adjust this parameter as needed
-train_X, train_Y = create_dataset(train, look_back)
-test_X, test_Y = create_dataset(test, look_back)
-
-# Reshape input to be [samples, time steps, features]
-train_X = np.reshape(train_X, (train_X.shape[0], train_X.shape[1], 1))
-test_X = np.reshape(test_X, (test_X.shape[0], test_X.shape[1], 1))
+# Create sequences with a certain sequence length
+seq_length = 5
+sequences = create_sequences(data_tensor, seq_length)
 
 # Define LSTM model
-model = Sequential()
-model.add(LSTM(50, input_shape=(look_back, 1)))
-model.add(Dense(1))
-model.compile(loss='mean_squared_error', optimizer='adam')
+class LSTMModel(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, output_size):
+        super(LSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        out, _ = self.lstm(x, (h0, c0))
+        out = self.fc(out[:, -1, :])
+        return out
+
+# Initialize model
+input_size = output_size = 1
+hidden_size = 32
+num_layers = 2
+model = LSTMModel(input_size, hidden_size, num_layers, output_size)
+
+# Define loss function and optimizer
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 # Train the model
-model.fit(train_X, train_Y, epochs=100, batch_size=1, verbose=2)
+num_epochs = 100
+for epoch in range(num_epochs):
+    for seq in sequences:
+        optimizer.zero_grad()
+        y_pred = model(seq[:-1].unsqueeze(0))
+        loss = criterion(y_pred, seq[-1])
+        loss.backward()
+        optimizer.step()
+    if (epoch+1) % 10 == 0:
+        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 # Make predictions
-train_predict = model.predict(train_X)
-test_predict = model.predict(test_X)
+with torch.no_grad():
+    future = 50
+    preds = sequences[-1].unsqueeze(0)
+    for _ in range(future):
+        pred = model(preds[:, -seq_length:])
+        preds = torch.cat([preds, pred.unsqueeze(0)], axis=1)
 
-# Invert predictions
-train_predict = scaler.inverse_transform(train_predict)
-train_Y = scaler.inverse_transform([train_Y])
-test_predict = scaler.inverse_transform(test_predict)
-test_Y = scaler.inverse_transform([test_Y])
+# Inverse scaling
+preds = preds.squeeze().numpy()
+preds = scaler.inverse_transform(preds.reshape(1, -1))
 
-# Calculate mean absolute error
-mae_train = mean_absolute_error(train_Y[0], train_predict[:,0])
-mae_test = mean_absolute_error(test_Y[0], test_predict[:,0])
+# Generate timestamps for predictions
+pred_dates = pd.date_range(start=data.index[-1] + pd.Timedelta(days=7), periods=future, freq='W')
 
-print(f"Mean Absolute Error on Training Data: {mae_train}")
-print(f"Mean Absolute Error on Test Data: {mae_test}")
+# Plot predictions
+plt.figure(figsize=(10, 5))
+plt.plot(data.index, data.values, label='Actual Data')
+
+# Plot predictions for future dates
+plt.plot(pred_dates, preds[0][-future:], label='Predictions', linestyle='--')
+
+plt.xlabel('Week')
+plt.ylabel('Bitcoin Trend')
+plt.title('Bitcoin Trend Prediction')
+plt.legend()
+plt.show()

@@ -43,19 +43,27 @@ X = merged_data[['bitcoin_smoothed', 'ethereum: (Worldwide)','Close']][:-3]  # F
 y = merged_data['bitcoin_smoothed'][3:]     # Target (excluding the first 3 rows)
 
 # Split data into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Define the parameter grid for Grid Search
+# param_grid = {
+#     'n_estimators': [50, 75, 100, 125],
+#     'max_depth': [4, 5, 6],
+#     'min_samples_split': [1, 2, 3],
+#     'min_samples_leaf': [10, 11, 12],
+#     'max_features': [1, 2, 3]
+# }
+
 param_grid = {
-    'n_estimators': [50, 75, 100, 125],
-    'max_depth': [4, 5, 6],
-    'min_samples_split': [1, 2, 3],
-    'min_samples_leaf': [10, 11, 12],
-    'max_features': [1, 2, 3]
+    'n_estimators': [100, 350],
+    'max_depth': [None],
+    'min_samples_split': [2],
+    'min_samples_leaf': [1],
+    'max_features': ['sqrt']
 }
 
 # Instantiate the model
-model = RandomForestRegressor(random_state=42)
+model = RandomForestRegressor(random_state=0)
 
 # Instantiate Grid Search
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=3, n_jobs=-1, verbose=2)

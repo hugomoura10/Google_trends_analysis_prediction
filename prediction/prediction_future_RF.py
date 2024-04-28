@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 from scipy.signal import wiener
+from datetime import timedelta
 
 # Function to apply Wiener smoothing
 def apply_smoothing(data):
@@ -33,15 +34,15 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Define the parameter grid for Grid Search
 param_grid = {
-    'n_estimators': [325, 350, 375],
-    'max_depth': [2, 3, 4],
-    'min_samples_split': [3, 4, 5],
-    'min_samples_leaf': [8, 9, 10],
-    'max_features': [1, 2, 3]
+    'n_estimators': [100],
+    'max_depth': [None],
+    'min_samples_split': [2],
+    'min_samples_leaf': [1],
+    'max_features': ['sqrt']
 }
 
 # Instantiate the model
-model = RandomForestRegressor(random_state=0)
+model = RandomForestRegressor(random_state=42)
 
 # Instantiate Grid Search
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=3, n_jobs=-1, verbose=2)
@@ -74,11 +75,26 @@ print('The model predicts the last 3 rows:', predictions)
 print('Actual values for the last 3 rows:')
 print(df['bitcoin_smoothed'].tail(3))
 
+last_date = df.index[-1]  # Get the last date in the dataset
+future_dates = pd.date_range(start=last_date + timedelta(days=7), end='2024-12-31', freq='W')
+future_dates = pd.date_range(start=last_date + pd.DateOffset(7), end='2024-12-31', freq='W')
+
+# Reshape the future_dates into a 2D array
+future_dates_2d = future_dates.values.reshape(-1, 1)
+
+# Predictions for the future
+future_predictions = best_model.predict(future_dates_2d)
+
+# Print the predictions for the future
+print('Predictions for the future (until the end of 2024):')
+print(future_predictions)
+
 # Plot results
 plt.figure(figsize=(10, 6))
 plt.plot(df.index[3:], y, label='Actual bitcoin Searches (Smoothed)')
 plt.plot(df.index[3:len(train_pred) + 3], train_pred, label='Train Predictions')
 plt.plot(df.index[-len(test_pred):], test_pred, label='Test Predictions')
+plt.plot(future_dates, future_predictions, label='Future Predictions', linestyle='--')
 plt.title('bitcoin Searches Forecast (Smoothed)' if apply_smoothing_flag else 'bitcoin Searches Forecast (Original)')
 plt.xlabel('Week')
 plt.ylabel('bitcoin Searches (Smoothed)' if apply_smoothing_flag else 'bitcoin Searches (Original)')
