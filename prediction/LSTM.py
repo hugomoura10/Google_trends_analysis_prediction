@@ -4,23 +4,24 @@ import torch
 import torch.nn as nn
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-# Load the dataset
-data = pd.read_csv("Google Trends Data Challenge Datasets/trends/bitcoin.csv", skiprows=1)
+ 
+bitcoin_data = pd.read_csv("Google Trends Data Challenge Datasets/trends/bitcoin.csv", skiprows=1)
 
-# Preprocess the data
-data['Week'] = pd.to_datetime(data['Week'])
-data.set_index('Week', inplace=True)
-data.sort_index(inplace=True)
+ 
+bitcoin_data['Week'] = pd.to_datetime(bitcoin_data['Week'])
+bitcoin_data.set_index('Week', inplace=True)
+bitcoin_data.sort_index(inplace=True)
 
-# Scale the data
+ 
 scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(data)
+scaled_bitcoin_data = scaler.fit_transform(bitcoin_data)
 
-# Convert data to PyTorch tensors
-data_tensor = torch.tensor(scaled_data, dtype=torch.float32)
+ 
+bitcoin_data_tensor = torch.tensor(scaled_bitcoin_data, dtype=torch.float32)
 
-# Define function to create sequences
+ 
 def create_sequences(data, seq_length):
     sequences = []
     for i in range(len(data) - seq_length):
@@ -28,11 +29,11 @@ def create_sequences(data, seq_length):
         sequences.append(seq)
     return torch.stack(sequences)
 
-# Create sequences with a certain sequence length
-seq_length = 5
-sequences = create_sequences(data_tensor, seq_length)
+ 
+sequence_length = 5
+bitcoin_sequences = create_sequences(bitcoin_data_tensor, sequence_length)
 
-# Define LSTM model
+ 
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, output_size):
         super(LSTMModel, self).__init__()
@@ -48,52 +49,60 @@ class LSTMModel(nn.Module):
         out = self.fc(out[:, -1, :])
         return out
 
-# Initialize model
+ 
 input_size = output_size = 1
-hidden_size = 32
-num_layers = 2
-model = LSTMModel(input_size, hidden_size, num_layers, output_size)
+hidden_size = 128
+num_layers = 3
+bitcoin_model = LSTMModel(input_size, hidden_size, num_layers, output_size)
 
-# Define loss function and optimizer
+ 
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(bitcoin_model.parameters(), lr=0.0001)
 
-# Train the model
-num_epochs = 100
+ 
+num_epochs = 50
 for epoch in range(num_epochs):
-    for seq in sequences:
+    for seq in bitcoin_sequences:
         optimizer.zero_grad()
-        y_pred = model(seq[:-1].unsqueeze(0))
+        y_pred = bitcoin_model(seq[:-1].unsqueeze(0))
         loss = criterion(y_pred, seq[-1])
         loss.backward()
         optimizer.step()
     if (epoch+1) % 10 == 0:
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
-# Make predictions
+ 
 with torch.no_grad():
     future = 50
-    preds = sequences[-1].unsqueeze(0)
+    bitcoin_preds = bitcoin_sequences[-1].unsqueeze(0)
     for _ in range(future):
-        pred = model(preds[:, -seq_length:])
-        preds = torch.cat([preds, pred.unsqueeze(0)], axis=1)
+        pred = bitcoin_model(bitcoin_preds[:, -sequence_length:])
+        bitcoin_preds = torch.cat([bitcoin_preds, pred.unsqueeze(0)], axis=1)
 
-# Inverse scaling
-preds = preds.squeeze().numpy()
-preds = scaler.inverse_transform(preds.reshape(1, -1))
+ 
+bitcoin_preds = bitcoin_preds.squeeze().numpy()
+bitcoin_preds = scaler.inverse_transform(bitcoin_preds.reshape(1, -1)).flatten()
 
-# Generate timestamps for predictions
-pred_dates = pd.date_range(start=data.index[-1] + pd.Timedelta(days=7), periods=future, freq='W')
+ 
+future_dates = pd.date_range(start=bitcoin_data.index[-1] + pd.Timedelta(days=7), periods=future, freq='W')
 
-# Plot predictions
+ 
 plt.figure(figsize=(10, 5))
-plt.plot(data.index, data.values, label='Actual Data')
+plt.plot(bitcoin_data.index, bitcoin_data.values, label='Actual Data')
 
-# Plot predictions for future dates
-plt.plot(pred_dates, preds[0][-future:], label='Predictions', linestyle='--')
+ 
+plt.plot(future_dates, bitcoin_preds[-future:], label='Predictions', linestyle='--')
 
 plt.xlabel('Week')
 plt.ylabel('Bitcoin Trend')
 plt.title('Bitcoin Trend Prediction')
 plt.legend()
 plt.show()
+
+bitcoin_preds = bitcoin_preds.squeeze().numpy()
+bitcoin_preds = scaler.inverse_transform(bitcoin_preds.reshape(1, -1)).flatten()
+
+future_dates = pd.date_range(start=bitcoin_data.index[-1] + pd.Timedelta(days=7), periods=bitcoin_preds.shape[0], freq='W')
+
+print(f"Mean Squared Error (MSE): {mse:.4f}")
+print(f"Mean Absolute Error (MAE): {mae:.4f}")

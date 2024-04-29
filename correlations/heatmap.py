@@ -7,7 +7,7 @@ df = pd.read_csv('correlation_results.csv', index_col=0)
 cmap = sns.color_palette("coolwarm", as_cmap=True)
 
 plt.figure(figsize=(12, 8))
-sns.heatmap(df, cmap=cmap, annot=True, fmt=".3f")
+sns.heatmap(df, cmap=cmap, annot=True, fmt=".3f", vmin=0, vmax=1)
 plt.title('Correlation between Token Price and Google Trends')
 plt.xlabel('Week')
 plt.ylabel('Token')

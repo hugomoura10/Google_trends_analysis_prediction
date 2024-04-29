@@ -18,7 +18,6 @@ trend_data['Week'] = pd.to_datetime(trend_data['Week'])
 trend_data['bitcoin: (Worldwide)'] = preprocess_trend_data(trend_data['bitcoin: (Worldwide)'])
 
 merged_data = pd.merge(market_cap_data, trend_data, left_on='date', right_on='Week')
-
 correlation = merged_data['market_cap'].corr(merged_data['bitcoin: (Worldwide)'])
 
 print(merged_data)
@@ -42,11 +41,11 @@ correlation_values = {
 
 sorted_correlation_values = dict(sorted(correlation_values.items(), key=lambda item: item[1], reverse=True))
 
-plt.figure(figsize=(12, 6))
-plt.bar(sorted_correlation_values.keys(), sorted_correlation_values.values(), color='skyblue')
-plt.title('Correlation between Monthly Crypto and Weekly Token Trends')
-plt.xlabel('Token')
-plt.ylabel('Correlation')
-plt.xticks(rotation=45, ha='right')
-plt.tight_layout()
-plt.show()
+# plt.figure(figsize=(12, 6))
+# plt.bar(sorted_correlation_values.keys(), sorted_correlation_values.values(), color='skyblue')
+# plt.title('Correlation between Monthly Crypto and Weekly Token Trends')
+# plt.xlabel('Token')
+# plt.ylabel('Correlation')
+# plt.xticks(rotation=45, ha='right')
+# plt.tight_layout()
+# plt.show()

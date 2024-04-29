@@ -23,7 +23,7 @@ def calculate_correlation(price_csv_path, trend_csv_path, trend_column_name):
     price_df_resampled = price_df.resample('W').mean()
     
     merged_df = pd.merge(price_df_resampled, trend_series_numeric, left_index=True, right_index=True)
-    
+    print(merged_df)
     correlation = merged_df[trend_column_name].corr(merged_df['Close'])
     
     return correlation
