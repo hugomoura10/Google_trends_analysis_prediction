@@ -35,15 +35,6 @@ y = df_monthly['bitcoin_smoothed'][3:]
  
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
- 
- 
- 
- 
- 
- 
- 
- 
-
 param_grid = {
     'n_estimators': [100, 150],
     'max_depth': [None],
@@ -51,13 +42,9 @@ param_grid = {
     'min_samples_leaf': [1, 2, 3],
     'max_features': ['sqrt']
 }
-
-
-
  
 model = RandomForestRegressor(random_state=42)
 
- 
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=3, n_jobs=-1, verbose=2)
 
  
@@ -67,7 +54,6 @@ grid_search.fit(X_train, y_train)
 best_params = grid_search.best_params_
 print("Best Parameters:", best_params)
 
- 
 best_model = grid_search.best_estimator_
 
  
