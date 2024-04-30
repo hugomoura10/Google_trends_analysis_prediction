@@ -50,6 +50,7 @@ df_monthly['monero_smoothed'].fillna(method='ffill', inplace=True)
 X = df_monthly[['bitcoin_smoothed', 'ethereum_smoothed', 'monero_smoothed']][:-3] 
 y = df_monthly['bitcoin_smoothed'][3:] 
 
+print(df_monthly)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 param_grid = {

@@ -17,7 +17,7 @@ df = df.dropna()
 df['Week'] = pd.to_datetime(df['Week'])
 
  
-apply_smoothing_flag = False   
+apply_smoothing_flag = False #Flag   
 if apply_smoothing_flag:
      
     df['bitcoin_smoothed'] = apply_smoothing(df['bitcoin: (Worldwide)'])
@@ -31,33 +31,26 @@ y = df['bitcoin_smoothed'][3:]
  
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
- 
- 
- 
- 
- 
- 
- 
- 
-
-
 param_grid = {
-    'n_estimators': [100, 200, 300],
+    'n_estimators': [200, 300, 350, 375],
     'max_depth': [None],
-    'min_samples_split': [2, 3, 4],
-    'min_samples_leaf': [1, 2, 3],
+    'min_samples_split': [2, 3, 4, 5],
+    'min_samples_leaf': [1, 2, 3, 4],
     'max_features': ['sqrt']
 }
 
+#Default values
+# param_grid = {
+#     'n_estimators': [100],
+#     'max_depth': [None],
+#     'min_samples_split': [2],
+#     'min_samples_leaf': [1],
+#     'max_features': ['sqrt']
+# }
  
-model = RandomForestRegressor(random_state=42)
-
- 
+model = RandomForestRegressor(random_state=42) 
 grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=3, n_jobs=-1, verbose=2)
-
- 
 grid_search.fit(X_train, y_train)
-
  
 best_params = grid_search.best_params_
 print("Best Parameters:", best_params)
