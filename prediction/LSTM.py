@@ -99,10 +99,12 @@ plt.title('Bitcoin Trend Prediction')
 plt.legend()
 plt.show()
 
-bitcoin_preds = bitcoin_preds.squeeze().numpy()
-bitcoin_preds = scaler.inverse_transform(bitcoin_preds.reshape(1, -1)).flatten()
-
+bitcoin_preds = bitcoin_preds.squeeze()
 future_dates = pd.date_range(start=bitcoin_data.index[-1] + pd.Timedelta(days=7), periods=bitcoin_preds.shape[0], freq='W')
+future_dates = pd.date_range(start=bitcoin_data.index[-1] + pd.Timedelta(days=7), periods=bitcoin_preds.shape[0], freq='W')
+
+mse = mean_squared_error(bitcoin_data.values.flatten(), bitcoin_preds)
+mae = mean_absolute_error(bitcoin_data.values.flatten(), bitcoin_preds)
 
 print(f"Mean Squared Error (MSE): {mse:.4f}")
 print(f"Mean Absolute Error (MAE): {mae:.4f}")
